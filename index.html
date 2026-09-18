@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>رمانک — نسخه آنلاین واقعی</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+body{margin:0;background:#0e0b17;color:#fff;font-family:Tahoma,Arial,sans-serif}*{box-sizing:border-box}
+main{max-width:720px;margin:auto;padding:18px 16px 100px}.brand{font-size:30px;font-weight:900;margin:12px 0 18px}.brand span{color:#c084fc}
+.card{background:#19142a;border:1px solid #302746;border-radius:18px;padding:16px;margin:12px 0}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
+input,textarea,select{width:100%;padding:12px;border-radius:12px;border:1px solid #3a3050;background:#100c18;color:#fff;margin:6px 0}textarea{min-height:130px}
+button{padding:12px 15px;border:0;border-radius:12px;background:#b78af7;color:#160e23;font-weight:bold;cursor:pointer}.secondary{background:#2c2540;color:white}.danger{background:#542238;color:white}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(720px,100%);background:#15111f;border-top:1px solid #302746;display:flex;justify-content:space-around;padding:10px;z-index:5}nav button{background:transparent;color:#aaa}
+.hidden{display:none}.tag{display:inline-block;padding:5px 8px;border-radius:99px;background:#2c2540;margin:2px;font-size:12px}.cover{height:150px;border-radius:14px;padding:15px;display:flex;align-items:end;font-size:23px;font-weight:bold;background:linear-gradient(135deg,#6d28d9,#db2777)}
+h1,h2,h3{margin-top:8px}.muted{color:#aaa1b8;font-size:13px}.ok{color:#66e3a3}.pending{color:#f1cf6a}
+</style></head><body><main>
+<div class="brand">رمان<span>ک</span> ✦</div>
+<section id="home"><div class="card"><h1>رمان‌ها را بخوان، داستان خودت را بنویس.</h1><p class="muted">نسخه آنلاین واقعی: حساب، ایمیل تأیید، گوگل، دیتابیس و پنل مدیر.</p></div><input id="q" placeholder="جستجوی رمان..." oninput="loadNovels()"><div id="list"></div></section>
+<section id="write" class="hidden"><div id="writeArea"></div></section>
+<section id="profile" class="hidden"><div id="profileArea"></div></section>
+<section id="admin" class="hidden"><div id="adminArea"></div></section>
+</main>
+<nav><button onclick="page('home')">خانه</button><button onclick="page('write')">نویسندگی</button><button onclick="page('profile')">پروفایل</button><button id="adminNav" class="hidden" onclick="page('admin')">مدیریت</button></nav>
+
+<div id="auth" class="card" style="position:fixed;inset:10%;max-width:500px;margin:auto;z-index:10;display:none;background:#19142a">
+<h2 id="authTitle">ورود</h2><input id="name" placeholder="نام" class="hidden"><input id="email" placeholder="ایمیل"><input id="password" type="password" placeholder="رمز عبور (حداقل ۸ کاراکتر)">
+<div class="row"><button onclick="login()">ورود</button><button class="secondary" onclick="register()">ثبت‌نام</button></div>
+<div id="google" style="margin-top:12px"></div><button class="secondary" onclick="closeAuth()">بستن</button></div>
+
+<script>
+const API='/api';let token=localStorage.getItem('romanak_token')||'';let me=null;
+async function api(path,opt={}){opt.headers={...(opt.headers||{}),'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})};const r=await fetch(API+path,opt);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'خطا');return d}
+function page(id){['home','write','profile','admin'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));if(id==='home')loadNovels();if(id==='write')renderWrite();if(id==='profile')renderProfile();if(id==='admin')loadAdmin()}
+function openAuth(){document.getElementById('auth').style.display='block';initGoogle()}function closeAuth(){document.getElementById('auth').style.display='none'}
+async function login(){try{const d=await api('/auth/login',{method:'POST',body:JSON.stringify({email:email.value,password:password.value})});token=d.token;localStorage.setItem('romanak_token',token);closeAuth();await boot()}catch(e){alert(e.message)}}
+async function register(){try{const d=await api('/auth/register',{method:'POST',body:JSON.stringify({name:name.value,email:email.value,password:password.value})});token=d.token;localStorage.setItem('romanak_token',token);alert('ثبت‌نام انجام شد. ایمیل تأیید برایت ارسال شده است.');closeAuth();await boot()}catch(e){alert(e.message)}}
+function initGoogle(){if(!window.google)return setTimeout(initGoogle,500);google.accounts.id.initialize({client_id:'YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com',callback:async r=>{try{const d=await api('/auth/google',{method:'POST',body:JSON.stringify({credential:r.credential})});token=d.token;localStorage.setItem('romanak_token',token);closeAuth();await boot()}catch(e){alert(e.message)}}});google.accounts.id.renderButton(document.getElementById('google'),{theme:'filled_black',size:'large',width:320})}
+async function boot(){try{me=await api('/me');adminNav.classList.toggle('hidden',me.role!=='admin')}catch{me=null;token='';localStorage.removeItem('romanak_token')}page('home')}
+async function loadNovels(){try{const a=await api('/novels?q='+encodeURIComponent(q.value));list.innerHTML=a.map(n=>`<div class="card"><div class="cover">${esc(n.title)}</div><h2>${esc(n.title)}</h2><span class="tag">${esc(n.genre)}</span><p class="muted">${esc(n.description||'')}<br>نویسنده: ${esc(n.author)} · ${n.chapter_count} پارت</p><button onclick="read('${n.id}')">خواندن</button></div>`).join('')||'<p class="muted">رمانی پیدا نشد.</p>'}catch(e){list.innerHTML='<p>خطا در اتصال به سرور</p>'}}
+async function read(id){try{const d=await api('/novels/'+id);list.innerHTML=`<button class="secondary" onclick="loadNovels()">← برگشت</button><div class="card"><h1>${esc(d.novel.title)}</h1><p class="muted">${esc(d.novel.description||'')}</p>${d.chapters.map((c,i)=>`<article class="card"><h3>پارت ${c.chapter_no}: ${esc(c.title)}</h3><p style="line-height:2;white-space:pre-wrap">${esc(c.body)}</p></article>`).join('')}<h3>نظرات</h3>${d.comments.map(c=>`<p><b>${esc(c.name)}</b>: ${esc(c.body)}</p>`).join('')}${token?`<textarea id="comment" placeholder="نظرت را بنویس"></textarea><button onclick="comment('${id}')">ثبت نظر</button>`:''}</div>`}catch(e){alert(e.message)}}
+async function comment(id){try{await api('/novels/'+id+'/comments',{method:'POST',body:JSON.stringify({body:comment.value})});read(id)}catch(e){alert(e.message)}}
+async function renderWrite(){if(!me){writeArea.innerHTML='<div class="card"><h2>🔒 نویسندگی</h2><p>برای نوشتن وارد حساب شو.</p><button onclick="openAuth()">ورود / ثبت‌نام</button></div>';return}const a=await api('/mine');writeArea.innerHTML=`<div class="card"><h2>نویسندگی ✍️</h2><input id="nt" placeholder="نام رمان"><textarea id="nd" placeholder="خلاصه"></textarea><input id="ng" placeholder="ژانر (هر ژانری خواستی)"><button onclick="createNovel()">ساخت رمان</button></div>`+a.map(n=>`<div class="card"><h3>${esc(n.title)}</h3><span class="tag">${esc(n.status)}</span><p>${n.parts_count||''}</p><button onclick="editor('${n.id}')">نوشتن پارت</button></div>`).join('')}
+async function createNovel(){try{const n=await api('/novels',{method:'POST',body:JSON.stringify({title:nt.value,description:nd.value,genre:ng.value||'عمومی'})});editor(n.id)}catch(e){alert(e.message)}}
+async function editor(id){const d=await api('/novels/'+id);writeArea.innerHTML=`<button class="secondary" onclick="renderWrite()">← برگشت</button><div class="card"><h2>${esc(d.novel.title)}</h2><input id="ct" placeholder="عنوان پارت"><textarea id="cb" placeholder="متن پارت"></textarea><button onclick="addChapter('${id}')">💾 ذخیره پارت</button>${d.chapters.map(c=>`<article class="card"><b>پارت ${c.chapter_no}: ${esc(c.title)}</b></article>`).join('')}<button onclick="submitNovel('${id}')">📤 ارسال برای تأیید</button></div>`}
+async function addChapter(id){try{await api('/novels/'+id+'/chapters',{method:'POST',body:JSON.stringify({title:ct.value,body:cb.value})});editor(id)}catch(e){alert(e.message)}}
+async function submitNovel(id){try{await api('/novels/'+id+'/submit',{method:'POST'});alert('برای تأیید ارسال شد');renderWrite()}catch(e){alert(e.message)}}
+async function renderProfile(){if(!me){profileArea.innerHTML='<div class="card"><button onclick="openAuth()">ورود / ثبت‌نام</button></div>';return}profileArea.innerHTML=`<div class="card"><h2>${esc(me.name)}</h2><p>${esc(me.email)}</p><p>ایمیل: ${me.email_verified?'تأیید شده':'تأیید نشده'}</p><button class="danger" onclick="logout()">خروج</button></div>`}
+function logout(){token='';me=null;localStorage.removeItem('romanak_token');boot()}
+async function loadAdmin(){if(me?.role!=='admin')return;const a=await api('/admin/pending');adminArea.innerHTML='<h2>مدیریت انتشار</h2>'+a.map(n=>`<div class="card"><h3>${esc(n.title)}</h3><p>نویسنده: ${esc(n.author)} · ${n.chapter_count} پارت</p><textarea id="note_${n.id}" placeholder="یادداشت برای نویسنده"></textarea><button onclick="review('${n.id}','publish')">تأیید و انتشار</button> <button class="danger" onclick="review('${n.id}','revision')">نیازمند اصلاح</button></div>`).join('')||'<p>موردی برای بررسی نیست.</p>'}
+async function review(id,action){try{await api('/admin/novels/'+id+'/review',{method:'POST',body:JSON.stringify({action,note:document.getElementById('note_'+id)?.value||''})});loadAdmin()}catch(e){alert(e.message)}}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+boot();
+</script></body></html>

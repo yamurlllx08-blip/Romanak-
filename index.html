@@ -3,72 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>رمانک ✦</title>
+<title>رمانک</title>
 <style>
-body{margin:0;background:#0e0b17;color:white;font-family:Tahoma}
-main{max-width:700px;margin:auto;padding:20px 15px 80px}
-.card{background:#19142a;border:1px solid #302746;border-radius:16px;padding:15px;margin:12px 0}
-input,button{padding:12px;border-radius:10px;border:0;margin:5px}
-input{width:90%;background:#100c18;color:white}
-button{background:#b78af7;font-weight:bold}
-nav{position:fixed;bottom:0;width:100%;background:#15111f;text-align:center;padding:10px}
+body{margin:0;background:#0e0b17;color:#fff;font-family:Tahoma}
+main{max-width:700px;margin:auto;padding:20px}
+.card{background:#19142a;padding:15px;margin:12px 0;border-radius:15px}
+input{width:90%;padding:12px;border-radius:10px}
+button{padding:11px;border:0;border-radius:10px;background:#b78af7}
 </style>
 </head>
-<body>
 
+<body>
 <main>
 <h1>رمان<span style="color:#c084fc">ک</span> ✦</h1>
-<input id="q" placeholder="جستجوی رمان..." oninput="load()">
-<div id="list">در حال بارگذاری...</div>
+<input id="search" placeholder="جستجوی رمان">
+<div id="list">در حال اتصال...</div>
 </main>
-
-<nav>🏠 خانه　✍️ نویسندگی　👤 پروفایل</nav>
 
 <script>
 const API="https://felwzlhqxkvaplqcrwor.supabase.co/functions/v1/server";
 
-async function api(x){
- let r=await fetch(API+x);
- return await r.json();
-}
-
 async function load(){
  try{
-  let a=await api("/novels");
-  let q=document.getElementById("q").value.toLowerCase();
-  a=a.filter(n=>n.title.toLowerCase().includes(q));
+  const r=await fetch(API);
+  const d=await r.json();
+  const novels=Array.isArray(d)?d:(d.novels||[]);
 
-  list.innerHTML=a.map(n=>`
-  <div class="card">
-  <h2>${n.title}</h2>
-  <p>${n.description||""}</p>
-  <button onclick="read('${n.id}')">📖 خواندن</button>
-  </div>`).join("")||"رمانی پیدا نشد.";
- }catch(e){
-  list.innerHTML="خطا در اتصال به سرور";
- }
-}
-
-async function read(id){
- try{
-  let d=await api("/novels/"+id);
-  list.innerHTML=`
-  <button onclick="load()">← برگشت</button>
-  <div class="card">
-  <h2>${d.novel.title}</h2>
-  <p>${d.novel.description||""}</p>
-  ${d.chapters.map(c=>`
+  list.innerHTML=novels.length
+  ?novels.map(n=>`
    <div class="card">
-   <h3>پارت ${c.chapter_no}: ${c.title}</h3>
-   <p style="line-height:2;white-space:pre-wrap">${c.body}</p>
-   </div>`).join("")}
-  </div>`;
- }catch(e){
-  alert("خطا در باز کردن رمان");
- }
-}
-
-load();
-</script>
-</body>
-</html>
+   <h2>${n.title}</h2>
+   <p>${n.description||""}</p>
+   <button onclick="read('${n.id}')">📖 خواندن</

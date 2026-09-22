@@ -35,4 +35,40 @@ async function api(x){
 async function load(){
  try{
   let a=await api("/novels");
-  let q=document.getElementById("
+  let q=document.getElementById("q").value.toLowerCase();
+  a=a.filter(n=>n.title.toLowerCase().includes(q));
+
+  list.innerHTML=a.map(n=>`
+  <div class="card">
+  <h2>${n.title}</h2>
+  <p>${n.description||""}</p>
+  <button onclick="read('${n.id}')">📖 خواندن</button>
+  </div>`).join("")||"رمانی پیدا نشد.";
+ }catch(e){
+  list.innerHTML="خطا در اتصال به سرور";
+ }
+}
+
+async function read(id){
+ try{
+  let d=await api("/novels/"+id);
+  list.innerHTML=`
+  <button onclick="load()">← برگشت</button>
+  <div class="card">
+  <h2>${d.novel.title}</h2>
+  <p>${d.novel.description||""}</p>
+  ${d.chapters.map(c=>`
+   <div class="card">
+   <h3>پارت ${c.chapter_no}: ${c.title}</h3>
+   <p style="line-height:2;white-space:pre-wrap">${c.body}</p>
+   </div>`).join("")}
+  </div>`;
+ }catch(e){
+  alert("خطا در باز کردن رمان");
+ }
+}
+
+load();
+</script>
+</body>
+</html>

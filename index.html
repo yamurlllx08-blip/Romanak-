@@ -35,3 +35,43 @@ async function load(){
    <h2>${n.title}</h2>
    <p>${n.description||""}</p>
    <button onclick="read('${n.id}')">📖 خواندن</
+function auth(){
+ list.innerHTML=`
+ <div class="card">
+ <h2>🔐 ورود / ثبت‌نام</h2>
+ <input id="name" placeholder="نام">
+ <input id="email" placeholder="ایمیل">
+ <input id="pass" type="password" placeholder="رمز عبور">
+ <button onclick="register()">ثبت‌نام</button>
+ <button onclick="login()">ورود</button>
+ </div>`;
+}
+
+async function register(){
+ let r=await fetch(API,{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({
+   action:"register",
+   name:name.value,
+   email:email.value,
+   password:pass.value
+  })
+ });
+ let d=await r.json();
+ alert(d.success?"ثبت‌نام موفق بود ❤️":d.error);
+}
+
+async function login(){
+ let r=await fetch(API,{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({
+   action:"login",
+   email:email.value,
+   password:pass.value
+  })
+ });
+ let d=await r.json();
+ alert(d.success?"ورود موفق بود ❤️":d.error);
+ }
